@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tool tách file excel Id và Name</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background: #f4f4f4;
+    }
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 700px;
+      margin: auto;
+    }
+    input[type="file"] {
+      margin-bottom: 1rem;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+      border-radius: 6px;
+    }
+    #status {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #333;
+    }
+    .file-list {
+      margin-top: 1rem;
+      list-style: none;
+      padding: 0;
+    }
+    .file-list li {
+      margin-bottom: 0.5rem;
+    }
+    .file-list button {
+      margin-left: 1rem;
+      background-color: #2196F3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Tool tách file excel Id và Name (Tối đa 50000 dòng)</h2>
+    <input type="file" id="fileInput" accept=".xlsx, .xls" />
+    <br />
+    <button onclick="processExcel()">Split</button>
+    <div id="status"></div>
+    <ul id="fileList" class="file-list"></ul>
+  </div>
+
+  <script>
+    let workbook, originalFileName = '';
+    let splitFiles = [];
+
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      originalFileName = file.name.split('.')[0];
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const data = new Uint8Array(evt.target.result);
+        workbook = XLSX.read(data, { type: 'array' });
+        document.getElementById('status').innerText = 'File loaded: ' + file.name;
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    function processExcel() {
+      if (!workbook) {
+        alert('Please upload a file first.');
+        return;
+      }
+
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      const flatData = data.flat().filter(item => item !== undefined && item !== '');
+
+      const CHUNK_SIZE = 50000;
+      let chunkCount = Math.ceil(flatData.length / CHUNK_SIZE);
+
+      splitFiles = []; // reset
+      const fileListEl = document.getElementById("fileList");
+      fileListEl.innerHTML = "";
+
+      for (let i = 0; i < chunkCount; i++) {
+        const chunk = flatData.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+        const output = chunk.map(name => ({ id: originalFileName, name }));
+        const ws = XLSX.utils.json_to_sheet(output);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+        const blob = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        const fileName = `${originalFileName}_${i + 1}.xlsx`;
+        splitFiles.push({ blob: new Blob([blob], { type: "application/octet-stream" }), fileName });
+
+        const li = document.createElement('li');
+        li.textContent = fileName;
+        const dlBtn = document.createElement('button');
+        dlBtn.textContent = "Download";
+        dlBtn.onclick = () => saveAs(splitFiles[i].blob, splitFiles[i].fileName);
+        li.appendChild(dlBtn);
+        fileListEl.appendChild(li);
+      }
+
+      document.getElementById('status').innerText = `Done. Prepared ${chunkCount} file(s) for download.`;
+    }
+  </script>
+</body>
+</html>
