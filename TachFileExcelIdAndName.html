@@ -51,9 +51,13 @@
     }
   </style>
 </head>
-<body>
-  <div class="container">
-    <h2>Tool tách file excel Id và Name (Tối đa 50000 dòng)</h2>
+<body><div class="container">
+    <h1>Tool tách file excel Id và Name (Tối đa 50000 dòng)</h1>
+    <h4>Hướng dẫn: Nhập file excel cần tách và bấm tách, sau đó download các file tách về máy. Các files đầu ra sẽ được chia thành nhiều file nhỏ, mỗi file chứa tối đa 50000 dòng</h4>
+    <h4>Lưu ý:</h4>
+    <ul>
+      <li>File đầu vào chỉ có 1 cột</li>
+      <li>Phần giá trị cột id sẽ lấy tên file import vào nên đặt tên file import hợp lý</li>    </ul>
     <input type="file" id="fileInput" accept=".xlsx, .xls" />
     <br />
     <button onclick="processExcel()">Split</button>
