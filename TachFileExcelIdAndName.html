@@ -52,8 +52,8 @@
   </style>
 </head>
 <body><div class="container">
-    <h1>Tool tách file excel Id và Name (Tối đa 50000 dòng)</h1>
-    <h4>Hướng dẫn: Nhập file excel cần tách và bấm tách, sau đó download các file tách về máy. Các files đầu ra sẽ được chia thành nhiều file nhỏ, mỗi file chứa tối đa 50000 dòng</h4>
+    <h1>Tool tách file excel Id và Name (Tối đa 100000 dòng)</h1>
+    <h4>Hướng dẫn: Nhập file excel cần tách và bấm tách, sau đó download các file tách về máy. Các files đầu ra sẽ được chia thành nhiều file nhỏ, mỗi file chứa tối đa 100000 dòng</h4>
     <h4>Lưu ý:</h4>
     <ul>
       <li>File đầu vào chỉ có 1 cột</li>
@@ -93,7 +93,7 @@
       const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
       const flatData = data.flat().filter(item => item !== undefined && item !== '');
 
-      const CHUNK_SIZE = 50000;
+      const CHUNK_SIZE = 100000;
       let chunkCount = Math.ceil(flatData.length / CHUNK_SIZE);
 
       splitFiles = []; // reset
