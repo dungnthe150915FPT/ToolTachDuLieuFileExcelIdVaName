@@ -51,14 +51,22 @@
     }
   </style>
 </head>
-<body><div class="container">
-    <h1>Tool tách file excel Id và Name (Tối đa 100000 dòng)</h1>
-    <h4>Hướng dẫn: Nhập file excel cần tách và bấm tách, sau đó download các file tách về máy. Các files đầu ra sẽ được chia thành nhiều file nhỏ, mỗi file chứa tối đa 100000 dòng</h4>
+<body>
+  <div class="container">
+    <h1>Tool tách file excel Id và Name (Tùy chỉnh số dòng)</h1>
+    <h4>Hướng dẫn: Nhập file excel cần tách, nhập id và số dòng tối đa, sau đó bấm tách và download các file tách về máy.</h4>
     <h4>Lưu ý:</h4>
     <ul>
       <li>File đầu vào chỉ có 1 cột</li>
-      <li>Phần giá trị cột id sẽ lấy tên file import vào nên đặt tên file import hợp lý</li>    </ul>
+      <li>Phần giá trị cột id sẽ lấy từ input id</li>
+    </ul>
     <input type="file" id="fileInput" accept=".xlsx, .xls" />
+    <br />
+    <label for="idInput">Nhập ID:</label>
+    <input type="text" id="idInput" placeholder="Nhập ID" />
+    <br />
+    <label for="chunkSizeInput">Số dòng tối đa mỗi file:</label>
+    <input type="number" id="chunkSizeInput" placeholder="100000" value="100000" />
     <br />
     <button onclick="processExcel()">Split</button>
     <div id="status"></div>
@@ -88,28 +96,31 @@
         return;
       }
 
+      const idValue = document.getElementById('idInput').value || originalFileName;
+      const chunkSize = parseInt(document.getElementById('chunkSizeInput').value, 10) || 100000;
+
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
       const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-      const flatData = data.flat().filter(item => item !== undefined && item !== '');
 
-      const CHUNK_SIZE = 100000;
-      let chunkCount = Math.ceil(flatData.length / CHUNK_SIZE);
+      // Bỏ qua dòng đầu tiên (title)
+      const flatData = data.slice(1).flat().filter(item => item !== undefined && item !== '');
+
+      let chunkCount = Math.ceil(flatData.length / chunkSize);
 
       splitFiles = []; // reset
       const fileListEl = document.getElementById("fileList");
       fileListEl.innerHTML = "";
 
       for (let i = 0; i < chunkCount; i++) {
-        const chunk = flatData.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-        const output = chunk.map(name => ({ id: originalFileName, name }));
-        const ws = XLSX.utils.json_to_sheet(output);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+        const chunk = flatData.slice(i * chunkSize, (i + 1) * chunkSize);
+        const output = chunk.map(name => ({ id: idValue, name }));
 
-        const blob = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-        const fileName = `${originalFileName}_${i + 1}.xlsx`;
-        splitFiles.push({ blob: new Blob([blob], { type: "application/octet-stream" }), fileName });
+        // Thêm tiêu đề vào nội dung CSV
+        const csvContent = ['id,name', ...output.map(row => `${row.id},${row.name}`)].join('\n');
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const fileName = `${idValue}_${i + 1}.csv`;
+        splitFiles.push({ blob, fileName });
 
         const li = document.createElement('li');
         li.textContent = fileName;
